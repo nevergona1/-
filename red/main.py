@@ -10,8 +10,8 @@ class SpellCheckApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('Spell Check with Highlighting')
-        self.setGeometry(100, 100, 900, 600)
+        self.setWindowTitle('Проверка орфографических ошибок')
+        self.setGeometry(100, 100, 1000, 700)
 
         self.text_edit = QTextEdit(self)
         self.text_edit.textChanged.connect(self.autoCheckSpelling)
