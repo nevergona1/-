@@ -28,13 +28,14 @@ class SpellCheckApp(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        self.spell_ru = SpellChecker(language='ru')
+        # Создайте экземпляр SpellChecker без указания языка
+        self.spell_checker = SpellChecker()
 
     def autoCheckSpelling(self):
         self.text_edit.textChanged.disconnect(self.autoCheckSpelling)
 
-        text = self.text_edit.toPlainText()
-        misspelled = self.spell_ru.unknown(text.split())
+        text = self.text_edit.toPlainText().lower()  # Преобразовать весь текст в нижний регистр
+        misspelled = self.spell_checker.unknown(text.split())
 
         cursor = self.text_edit.textCursor()
         default_format = QTextCharFormat()
@@ -63,16 +64,16 @@ class SpellCheckApp(QMainWindow):
     def correctSpelling(self):
         cursor = self.text_edit.textCursor()
         text = self.text_edit.toPlainText()
-        misspelled = self.spell_ru.unknown(text.split())
+        misspelled = self.spell_checker.unknown(text.split())
 
         for word in misspelled:
-            corrected_word = self.spell_ru.correction(word)
-            pos = text.find(word)
+            corrected_word = self.spell_checker.correction(word)
+            pos = text.lower().find(word)  # Преобразовать текст к нижнему регистру для поиска
             while pos != -1:
                 cursor.setPosition(pos)
                 cursor.setPosition(pos + len(word), QTextCursor.KeepAnchor)
                 cursor.insertText(corrected_word)
-                pos = text.find(word, pos + 1)
+                pos = text.lower().find(word, pos + 1)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
