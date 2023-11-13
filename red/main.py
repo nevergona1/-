@@ -24,39 +24,40 @@ class SpellCheckApp(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        self.spell_en = SpellChecker(language='en')
-
+        self.spell_ru = SpellChecker(language='ru')
     def autoCheckSpelling(self):
-        # Disconnect the textChanged signal to avoid recursion
         self.text_edit.textChanged.disconnect(self.autoCheckSpelling)
 
         text = self.text_edit.toPlainText()
-        misspelled = self.spell_en.unknown(text.split())
+        misspelled = self.spell_ru.unknown(text.split())
 
         cursor = self.text_edit.textCursor()
-        format = QTextCharFormat()
-        format.setUnderlineColor(QColor('red'))
-        format.setUnderlineStyle(QTextCharFormat.SpellCheckUnderline)
+        default_format = QTextCharFormat()  # Форматирование текста по умолчанию
+        default_format.setForeground(QColor('black'))  # Установка цвета текста по умолчанию на черный
 
-        # Reset underlining before rechecking
         cursor.setPosition(0)
         cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
-        cursor.setCharFormat(QTextCharFormat())
+        cursor.setCharFormat(default_format)  # Применение форматирования текста по умолчанию
+
+        red_underline_format = QTextCharFormat()
+        red_underline_format.setUnderlineColor(QColor('red'))
+        red_underline_format.setUnderlineStyle(QTextCharFormat.SpellCheckUnderline)
 
         for word in misspelled:
             pos = text.find(word)
             while pos != -1:
-                cursor.setPosition(pos)
-                cursor.movePosition(QTextCursor.NextWord, QTextCursor.KeepAnchor, len(word))
-                cursor.mergeCharFormat(format)
+                if pos > 0 and not text[pos - 1].isalpha():  # Проверяем, что перед словом нет буквы
+                    end = pos + len(word)
+                    cursor.setPosition(pos)
+                    cursor.setPosition(end, QTextCursor.KeepAnchor)
+                    cursor.mergeCharFormat(red_underline_format)
                 pos = text.find(word, pos + 1)
 
-        # Reconnect the textChanged signal
         self.text_edit.textChanged.connect(self.autoCheckSpelling)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     spell_check_app = SpellCheckApp()
     spell_check_app.show()
     sys.exit(app.exec_())
-твой прошлый код был стерт. здесь только английский язык но можно поставть и для русского, нужно в 27 строке указать значение ru. я пробовал сделать два языка сразу но чот не получилось и показывало что все слова не правильыне
