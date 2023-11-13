@@ -1,43 +1,81 @@
-from PyQt5 import Qt
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget, QPushButton
+from PyQt5.QtGui import QTextCharFormat, QTextCursor, QColor
+from spellchecker import SpellChecker
 
-
-class MainWindow(Qt.QMainWindow):
+class SpellCheckApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.sb_font_size = Qt.QSpinBox()
-        self.sb_font_size.setRange(5, 40)
-        self.sb_font_size.valueChanged.connect(self._on_font_size_changed)
+        self.initUI()
 
-        self.text_edit = Qt.QTextEdit('Test this!')
+    def initUI(self):
+        self.setWindowTitle('Проверка орфографических ошибок')
+        self.setGeometry(100, 100, 1000, 700)
 
-        layout = Qt.QVBoxLayout()
-        layout.addWidget(self.sb_font_size)
+        self.text_edit = QTextEdit(self)
+        self.text_edit.textChanged.connect(self.autoCheckSpelling)
+
+        layout = QVBoxLayout()
         layout.addWidget(self.text_edit)
 
-        central_widget = Qt.QWidget()
+        self.correct_button = QPushButton('Исправить', self)
+        self.correct_button.clicked.connect(self.correctSpelling)
+        layout.addWidget(self.correct_button)
+
+        central_widget = QWidget()
         central_widget.setLayout(layout)
 
         self.setCentralWidget(central_widget)
 
-    def _on_font_size_changed(self, value):
-        text_char_format = Qt.QTextCharFormat()
-        text_char_format.setFontPointSize(value)
+        self.spell_ru = SpellChecker(language='ru')
 
-        self.merge_format_on_word_or_selection(text_char_format)
+    def autoCheckSpelling(self):
+        self.text_edit.textChanged.disconnect(self.autoCheckSpelling)
 
-    def merge_format_on_word_or_selection(self, text_char_format):
+        text = self.text_edit.toPlainText()
+        misspelled = self.spell_ru.unknown(text.split())
+
         cursor = self.text_edit.textCursor()
-        if not cursor.hasSelection():
-            cursor.select(Qt.QTextCursor.WordUnderCursor)
+        default_format = QTextCharFormat()
+        default_format.setForeground(QColor('black'))
 
-        cursor.mergeCharFormat(text_char_format)
+        cursor.setPosition(0)
+        cursor.movePosition(QTextCursor.End, QTextCursor.KeepAnchor)
+        cursor.setCharFormat(default_format)
 
+        red_underline_format = QTextCharFormat()
+        red_underline_format.setUnderlineColor(QColor('red'))
+        red_underline_format.setUnderlineStyle(QTextCharFormat.SpellCheckUnderline)
+
+        for word in misspelled:
+            pos = text.find(word)
+            while pos != -1:
+                if pos > 0 and not text[pos - 1].isalpha():
+                    end = pos + len(word)
+                    cursor.setPosition(pos)
+                    cursor.setPosition(end, QTextCursor.KeepAnchor)
+                    cursor.mergeCharFormat(red_underline_format)
+                pos = text.find(word, pos + 1)
+
+        self.text_edit.textChanged.connect(self.autoCheckSpelling)
+
+    def correctSpelling(self):
+        cursor = self.text_edit.textCursor()
+        text = self.text_edit.toPlainText()
+        misspelled = self.spell_ru.unknown(text.split())
+
+        for word in misspelled:
+            corrected_word = self.spell_ru.correction(word)
+            pos = text.find(word)
+            while pos != -1:
+                cursor.setPosition(pos)
+                cursor.setPosition(pos + len(word), QTextCursor.KeepAnchor)
+                cursor.insertText(corrected_word)
+                pos = text.find(word, pos + 1)
 
 if __name__ == '__main__':
-    app = Qt.QApplication([])
-
-    mw = MainWindow()
-    mw.show()
-
-    app.exec()
+    app = QApplication(sys.argv)
+    spell_check_app = SpellCheckApp()
+    spell_check_app.show()
+    sys.exit(app.exec_())
