@@ -3,11 +3,17 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, Q
 from PyQt5.QtGui import QTextCharFormat, QTextCursor, QColor
 from spellchecker import SpellChecker
 
+# Укажите путь к файлу словаря ru_RU.gz
+RU_DICT_PATH = "ru.json"
+
 class SpellCheckApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.initUI()
+
+        # Используйте созданный словарь
+        self.spell_checker = SpellChecker(language=None, local_dictionary=RU_DICT_PATH)
 
     def initUI(self):
         self.setWindowTitle('Проверка орфографических ошибок')
@@ -28,13 +34,10 @@ class SpellCheckApp(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        # Создайте экземпляр SpellChecker без указания языка
-        self.spell_checker = SpellChecker()
-
     def autoCheckSpelling(self):
         self.text_edit.textChanged.disconnect(self.autoCheckSpelling)
 
-        text = self.text_edit.toPlainText().lower()  # Преобразовать весь текст в нижний регистр
+        text = self.text_edit.toPlainText()
         misspelled = self.spell_checker.unknown(text.split())
 
         cursor = self.text_edit.textCursor()
